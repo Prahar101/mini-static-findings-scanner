@@ -1,0 +1,6 @@
+# Pinned versions below are intentionally old/vulnerable to demonstrate SCA.
+flask==0.12.2
+requests==2.19.1
+pyyaml==5.1
+# Unpinned dependency: cannot be verified against advisories -> reported as LOW.
+certifi

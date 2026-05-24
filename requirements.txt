@@ -1,0 +1,4 @@
+# Runtime dependency. SCA version-range parsing uses `packaging`;
+# the scanner still runs (with a graceful note) if it is absent.
+# Pinned for reproducible installs (pyproject.toml keeps a >= floor for libraries).
+packaging==23.2

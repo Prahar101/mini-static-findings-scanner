@@ -1,0 +1,6 @@
+{
+  "__help__": "Auto-loaded from the current directory (or pass with --config). 'min_confidence' drops findings below the given score (0.0-1.0). 'enabled_rules' is an allowlist: if non-empty, ONLY those rules run. 'disabled_rules' is a denylist: those rules are turned off. CLI --enable-rule/--disable-rule merge with these lists. Rule names must match `python main.py --list-rules` exactly; unknown names print a warning. Defaults below are a no-op (scan everything).",
+  "min_confidence": 0.0,
+  "enabled_rules": [],
+  "disabled_rules": []
+}

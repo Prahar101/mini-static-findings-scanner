@@ -1,0 +1,22 @@
+# Virtual environment
+.venv/
+venv/
+
+# Python build / cache artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+
+# Generated reports (regenerate by running the scanner)
+findings.json
+findings-report.md
+findings.sarif
+findings.html
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

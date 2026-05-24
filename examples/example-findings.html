@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mini Static Findings Scanner</title>
+<style>
+:root{--high:#e5484d;--med:#f5a623;--low:#3b82f6;--fix:#46c08d;--bg:#0d0f14;--card:#151922;--line:#222734;--mut:#8b93a0;}
+*{box-sizing:border-box;}
+body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#e8eaed;
+  background:radial-gradient(1200px 600px at 50% -200px,#1b2030,#0d0f14);min-height:100vh;}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 48px;}
+header{text-align:center;padding:40px 16px 8px;}
+h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-.02em;
+  background:linear-gradient(90deg,#fff,#9fb4ff);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.sub{color:var(--mut);font-size:14px;margin-top:6px;}
+.counts{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.pill{padding:6px 16px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;
+  border:1px solid #2c313c;background:#11141b;user-select:none;transition:.15s;}
+.pill.HIGH{color:var(--high);} .pill.MED{color:var(--med);} .pill.LOW{color:var(--low);}
+.pill:hover{transform:translateY(-1px);}
+.pill.off{opacity:.32;}
+.toolbar{margin:22px auto 14px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;}
+input[type=search],select{background:#11141b;border:1px solid #2c313c;color:#e8eaed;padding:9px 12px;border-radius:10px;font-size:13px;}
+input[type=search]{width:min(420px,70vw);}
+input[type=search]:focus,select:focus{outline:none;border-color:#3a4a7a;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.35);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--line);vertical-align:top;}
+th{color:var(--mut);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+  position:sticky;top:0;background:#10141c;backdrop-filter:blur(6px);}
+tr.row{cursor:pointer;}
+tr.row:hover{background:#1a1f2b;}
+tr.row.HIGH td:first-child{box-shadow:inset 3px 0 var(--high);}
+tr.row.MED td:first-child{box-shadow:inset 3px 0 var(--med);}
+tr.row.LOW td:first-child{box-shadow:inset 3px 0 var(--low);}
+.badge{display:inline-block;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:700;}
+.badge.HIGH{background:rgba(229,72,77,.16);color:var(--high);}
+.badge.MED{background:rgba(245,166,35,.16);color:var(--med);}
+.badge.LOW{background:rgba(59,130,246,.16);color:var(--low);}
+.loc{font-family:ui-monospace,Consolas,monospace;color:#cbd2dc;white-space:nowrap;}
+.desc{font-weight:500;}
+.rem{margin-top:5px;font-size:12px;color:var(--fix);display:flex;gap:6px;align-items:flex-start;}
+.rem b{font-weight:600;opacity:.85;}
+.caret{color:var(--mut);font-size:11px;}
+.detail td{background:#0f131b;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:10px;}
+.kv{background:#141925;border:1px solid var(--line);border-radius:8px;padding:8px 10px;}
+.kv .k{color:var(--mut);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;}
+.kv .v{margin-top:3px;font-size:13px;word-break:break-word;}
+.fixbox{background:rgba(70,192,141,.08);border:1px solid rgba(70,192,141,.3);border-radius:8px;padding:10px 12px;}
+.fixbox .k{color:var(--fix);font-weight:700;font-size:12px;}
+.fixbox .v{margin-top:4px;color:#cdeede;font-size:13px;}
+.muted{color:var(--mut);font-size:13px;}
+footer{text-align:center;padding:22px;color:#5b6270;font-size:12px;}
+.empty{padding:48px;text-align:center;color:var(--mut);display:none;}
+</style></head><body><div class="wrap">
+<header><h1>Mini Static Findings Scanner</h1>
+<div class="sub" id="sub"></div><div class="counts" id="counts"></div></header>
+<div class="toolbar">
+<input type="search" id="q" placeholder="Search file, rule, or description...">
+<select id="lang"><option value="">All languages</option></select>
+<span class="muted" id="shown"></span></div>
+<div class="card"><table>
+<thead><tr><th>#</th><th>Severity</th><th>File path</th><th>Line</th><th>Rule name</th><th>Short explanation &amp; remediation</th></tr></thead>
+<tbody id="rows"></tbody></table>
+<div class="empty" id="empty">No findings match your filters.</div></div>
+<footer>Generated locally - no data leaves your machine. Click any row for full details.</footer>
+</div>
+<script>
+const DATA=[{"rule": "Hardcoded Secret", "severity": "HIGH", "category": "Secrets", "file": "src/config.js", "line": 1, "message": "Possible hardcoded secret or credential found", "evidence": "const api_key = \"sk_test_1234567890abcdefSECRETKEYVALUE\";", "remediation": "Move secrets to environment variables or a managed secrets vault and rotate exposed values.", "cwe": "CWE-798", "confidence": 1.0, "language": "JavaScript"}, {"rule": "Vulnerable Dependency", "severity": "HIGH", "category": "Dependency", "file": "requirements.txt", "line": 2, "message": "flask 0.12.2 - CVE-2018-1000656: Flask is vulnerable to Denial of Service via incorrect encoding of JSON data", "evidence": "flask==0.12.2", "remediation": "Upgrade flask to 0.12.3 or later.", "cwe": "CWE-20", "confidence": 0.9, "language": "Python"}, {"rule": "Vulnerable Dependency", "severity": "HIGH", "category": "Dependency", "file": "requirements.txt", "line": 4, "message": "pyyaml 5.1 - CVE-2019-20477: Deserialization of Untrusted Data in PyYAML", "evidence": "pyyaml==5.1", "remediation": "Upgrade pyyaml to 5.2 or later.", "cwe": "CWE-502", "confidence": 0.9, "language": "Python"}, {"rule": "Disabled TLS Verification", "severity": "HIGH", "category": "Transport Security", "file": "src/insecure_examples.py", "line": 24, "message": "TLS/certificate verification appears disabled", "evidence": "return requests.get(url, verify=False)", "remediation": "Enable certificate verification; trust only valid CAs.", "cwe": "CWE-295", "confidence": 0.85, "language": "Python"}, {"rule": "Dangerous Code Execution", "severity": "HIGH", "category": "Code Execution", "file": "src/app.py", "line": 6, "message": "Dangerous dynamic code execution function detected", "evidence": "subprocess.run(\"ls\", shell=True)", "remediation": "Avoid dynamic execution; if unavoidable, strictly validate and constrain inputs.", "cwe": "CWE-95", "confidence": 0.8, "language": "Python"}, {"rule": "Dangerous Code Execution", "severity": "HIGH", "category": "Code Execution", "file": "src/app.py", "line": 9, "message": "Dangerous dynamic code execution function detected", "evidence": "os.system(\"whoami\")", "remediation": "Avoid dynamic execution; if unavoidable, strictly validate and constrain inputs.", "cwe": "CWE-95", "confidence": 0.8, "language": "Python"}, {"rule": "Insecure Deserialization", "severity": "HIGH", "category": "Code Execution", "file": "src/insecure_examples.py", "line": 19, "message": "Unsafe deserialization of untrusted data", "evidence": "return pickle.loads(blob)", "remediation": "Use safe deserialization (e.g. yaml.safe_load, json) and never deserialize untrusted input.", "cwe": "CWE-502", "confidence": 0.65, "language": "Python"}, {"rule": "High Entropy Secret Context", "severity": "HIGH", "category": "Secrets", "file": ".env", "line": 1, "message": "Long high-entropy value near a secret-related keyword", "evidence": "TOKEN=abc1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZsecret", "remediation": "Review whether the value is a credential, token, or key; move real secrets to a vault.", "cwe": "CWE-798", "confidence": 0.6, "language": "Dotenv"}, {"rule": "Path Traversal Risk", "severity": "HIGH", "category": "Input Validation", "file": "src/app.py", "line": 7, "message": "Unsafe file access from user-controlled input", "evidence": "filename = request.args.get(\"file\")", "remediation": "Normalize paths and enforce an allow-listed base directory before file access.", "cwe": "CWE-22", "confidence": 0.6, "language": "Python"}, {"rule": "Path Traversal Risk", "severity": "HIGH", "category": "Input Validation", "file": "src/app.py", "line": 8, "message": "Unsafe file access from user-controlled input", "evidence": "send_file(filename)", "remediation": "Normalize paths and enforce an allow-listed base directory before file access.", "cwe": "CWE-22", "confidence": 0.6, "language": "Python"}, {"rule": "SQL Injection Risk", "severity": "HIGH", "category": "Input Validation", "file": "src/insecure_examples.py", "line": 29, "message": "SQL query appears built from string concatenation or interpolation", "evidence": "cursor.execute(\"SELECT * FROM users WHERE id = \" + user_id)", "remediation": "Use parameterized queries / prepared statements instead of string building.", "cwe": "CWE-89", "confidence": 0.6, "language": "Python"}, {"rule": "Hardcoded Secret", "severity": "HIGH", "category": "Secrets", "file": "src/config.js", "line": 2, "message": "Possible hardcoded secret or credential found", "evidence": "const password = \"temporaryPassword123\";", "remediation": "Move secrets to environment variables or a managed secrets vault and rotate exposed values.", "cwe": "CWE-798", "confidence": 0.55, "language": "JavaScript"}, {"rule": "Vulnerable Dependency", "severity": "MED", "category": "Dependency", "file": "package.json", "line": 6, "message": "lodash 4.17.4 - CVE-2020-28500: Regular Expression Denial of Service (ReDoS) in lodash", "evidence": "lodash==4.17.4", "remediation": "Upgrade lodash to 4.17.21 or later.", "cwe": "CWE-1333", "confidence": 0.9, "language": "JavaScript"}, {"rule": "Vulnerable Dependency", "severity": "MED", "category": "Dependency", "file": "package.json", "line": 7, "message": "minimist 1.2.0 - CVE-2020-7598: Prototype Pollution in minimist", "evidence": "minimist==1.2.0", "remediation": "Upgrade minimist to 0.2.1 or later.", "cwe": "CWE-1321", "confidence": 0.9, "language": "JavaScript"}, {"rule": "Vulnerable Dependency", "severity": "MED", "category": "Dependency", "file": "package.json", "line": 8, "message": "jquery 3.3.1 - CVE-2019-11358: XSS in jQuery as used in Drupal, Backdrop CMS, and other products", "evidence": "jquery==3.3.1", "remediation": "Upgrade jquery to 3.4.0 or later.", "cwe": "CWE-1321", "confidence": 0.9, "language": "JavaScript"}, {"rule": "Vulnerable Dependency", "severity": "MED", "category": "Dependency", "file": "requirements.txt", "line": 3, "message": "requests 2.19.1 - CVE-2024-47081: Requests vulnerable to .netrc credentials leak via malicious URLs", "evidence": "requests==2.19.1", "remediation": "Upgrade requests to 2.32.4 or later.", "cwe": "CWE-522", "confidence": 0.9, "language": "Python"}, {"rule": "Sensitive File Present", "severity": "MED", "category": "File Exposure", "file": ".env", "line": 1, "message": "Sensitive configuration, credential, database, or backup file found", "evidence": ".env", "remediation": "Keep sensitive files out of source control and public web roots.", "cwe": "CWE-552", "confidence": 0.8, "language": "Dotenv"}, {"rule": "Sensitive File Present", "severity": "MED", "category": "File Exposure", "file": "backup.sql", "line": 1, "message": "Sensitive configuration, credential, database, or backup file found", "evidence": "backup.sql", "remediation": "Keep sensitive files out of source control and public web roots.", "cwe": "CWE-552", "confidence": 0.8, "language": "SQL"}, {"rule": "Broad CORS Policy", "severity": "MED", "category": "Configuration", "file": "src/server.js", "line": 2, "message": "Broad CORS policy allows requests from any origin", "evidence": "app.use(cors({ origin: \"*\" }));", "remediation": "Restrict CORS origins to an explicit allow-list of trusted domains.", "cwe": "CWE-942", "confidence": 0.8, "language": "JavaScript"}, {"rule": "Debug Mode Enabled", "severity": "MED", "category": "Configuration", "file": "src/app.py", "line": 5, "message": "Debug or development mode appears enabled", "evidence": "app.run(debug=True)", "remediation": "Disable debug/development mode in production builds.", "cwe": "CWE-489", "confidence": 0.75, "language": "Python"}, {"rule": "Insecure HTTP URL", "severity": "MED", "category": "Transport Security", "file": "src/insecure_examples.py", "line": 38, "message": "Insecure HTTP URL detected instead of HTTPS", "evidence": "SERVICE_URL = \"http://internal.corp/api/v1\"  # Insecure HTTP URL (real host).", "remediation": "Use HTTPS for network communication.", "cwe": "CWE-319", "confidence": 0.55, "language": "Python"}, {"rule": "Weak Cryptography", "severity": "MED", "category": "Cryptography", "file": "src/insecure_examples.py", "line": 14, "message": "Weak or broken cryptographic algorithm used in a security context", "evidence": "return hashlib.md5(password.encode()).hexdigest()", "remediation": "Use modern algorithms (SHA-256+, bcrypt/argon2 for passwords, AES-GCM for ciphers).", "cwe": "CWE-327", "confidence": 0.5, "language": "Python"}, {"rule": "Sensitive Data in Logs", "severity": "MED", "category": "Information Exposure", "file": "src/insecure_examples.py", "line": 35, "message": "Secret or credential appears to be written to logs/console", "evidence": "print(\"Logging in\", username, \"with password\", password)", "remediation": "Never log secrets; redact sensitive fields before logging.", "cwe": "CWE-532", "confidence": 0.5, "language": "Python"}, {"rule": "Suspicious Security Comment", "severity": "LOW", "category": "Code Hygiene", "file": "README.md", "line": 8, "message": "Security-related TODO, FIXME, or temporary bypass comment found", "evidence": "- TODO security: review the auth middleware before shipping.", "remediation": "Resolve security-related temporary comments before release.", "cwe": "CWE-546", "confidence": 0.7, "language": "Markdown"}, {"rule": "Suspicious Security Comment", "severity": "LOW", "category": "Code Hygiene", "file": "src/server.js", "line": 3, "message": "Security-related TODO, FIXME, or temporary bypass comment found", "evidence": "// TODO security: review auth middleware", "remediation": "Resolve security-related temporary comments before release.", "cwe": "CWE-546", "confidence": 0.7, "language": "JavaScript"}, {"rule": "Unpinned Dependency", "severity": "LOW", "category": "Dependency", "file": "requirements.txt", "line": 6, "message": "Dependency 'certifi' is unpinned; cannot verify against advisories", "evidence": "certifi (PyPI)", "remediation": "Pin an exact version or commit a lockfile so it can be vulnerability-scanned.", "cwe": "CWE-1104", "confidence": 0.4, "language": "Python"}];
+const sevState={HIGH:true,MED:true,LOW:true};
+const order={HIGH:0,MED:1,LOW:2};
+const $=id=>document.getElementById(id);
+$('sub').textContent=DATA.length+' findings';
+[...new Set(DATA.map(d=>d.language).filter(Boolean))].sort().forEach(l=>{
+  const o=document.createElement('option');o.value=l;o.textContent=l;$('lang').appendChild(o);});
+function counts(){const c={HIGH:0,MED:0,LOW:0};DATA.forEach(d=>c[d.severity]=(c[d.severity]||0)+1);return c;}
+function renderCounts(){const c=counts();$('counts').innerHTML='';
+  ['HIGH','MED','LOW'].forEach(s=>{const e=document.createElement('span');
+    e.className='pill '+s+(sevState[s]?'':' off');e.textContent=s+' '+(c[s]||0);
+    e.onclick=()=>{sevState[s]=!sevState[s];renderCounts();render();};$('counts').appendChild(e);});}
+function esc(s){return (s==null?'':String(s)).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));}
+function render(){
+  const q=$('q').value.toLowerCase(),lf=$('lang').value;
+  let list=DATA.filter(d=>sevState[d.severity]&&(!lf||d.language===lf)&&
+    (!q||(d.file+d.rule+d.message+(d.remediation||'')).toLowerCase().includes(q)));
+  list.sort((a,b)=>(order[a.severity]-order[b.severity])||(b.confidence-a.confidence));
+  $('rows').innerHTML='';
+  list.forEach((d,i)=>{
+    const tr=document.createElement('tr');tr.className='row '+d.severity;
+    const rem=d.remediation?'<div class="rem"><b>Fix:</b><span>'+esc(d.remediation)+'</span></div>':'';
+    tr.innerHTML='<td>'+(i+1)+' <span class="caret">&#9656;</span></td>'+
+      '<td><span class="badge '+d.severity+'">'+d.severity+'</span></td>'+
+      '<td class="loc">'+esc(d.file)+'</td><td class="loc">'+d.line+'</td>'+
+      '<td>'+esc(d.rule)+'</td>'+
+      '<td><div class="desc">'+esc(d.message)+'</div>'+rem+'</td>';
+    const det=document.createElement('tr');det.className='detail';det.style.display='none';
+    det.innerHTML='<td></td><td colspan="5">'+
+      '<div class="grid">'+
+        '<div class="kv"><div class="k">CWE</div><div class="v">'+esc(d.cwe||'-')+'</div></div>'+
+        '<div class="kv"><div class="k">Confidence</div><div class="v">'+d.confidence+'</div></div>'+
+        '<div class="kv"><div class="k">Language</div><div class="v">'+esc(d.language||'-')+'</div></div>'+
+        '<div class="kv"><div class="k">Category</div><div class="v">'+esc(d.category||'-')+'</div></div>'+
+        '<div class="kv"><div class="k">Evidence</div><div class="v"><code>'+esc(d.evidence||'-')+'</code></div></div>'+
+      '</div>'+
+      '<div class="fixbox"><div class="k">Remediation</div><div class="v">'+esc(d.remediation||'-')+'</div></div>'+
+      '</td>';
+    tr.onclick=()=>{det.style.display=det.style.display==='none'?'':'none';};
+    $('rows').appendChild(tr);$('rows').appendChild(det);});
+  $('shown').textContent=list.length+' shown';
+  $('empty').style.display=list.length?'none':'block';}
+$('q').oninput=render;$('lang').onchange=render;renderCounts();render();
+</script></body></html>

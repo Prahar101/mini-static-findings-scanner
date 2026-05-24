@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mini-static-findings-scanner"
+version = "1.0.0"
+description = "A small local CLI that scans source files for security and code-quality findings."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = ["packaging>=21.0"]
+
+[project.scripts]
+scanner = "scanner.cli:main"
+
+[tool.setuptools]
+packages = ["scanner"]

@@ -1,0 +1,934 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Mini Static Findings Scanner",
+          "version": "1.0.0",
+          "rules": [
+            {
+              "id": "hardcoded-secret",
+              "name": "Hardcoded Secret",
+              "shortDescription": {
+                "text": "Possible hardcoded secret or credential found"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ],
+                "security-severity": "8.0"
+              },
+              "help": {
+                "text": "Move secrets to environment variables or a managed secrets vault and rotate exposed values."
+              }
+            },
+            {
+              "id": "vulnerable-dependency",
+              "name": "Vulnerable Dependency",
+              "shortDescription": {
+                "text": "Vulnerable Dependency"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-20"
+                ],
+                "security-severity": "8.0"
+              }
+            },
+            {
+              "id": "disabled-tls-verification",
+              "name": "Disabled TLS Verification",
+              "shortDescription": {
+                "text": "TLS/certificate verification appears disabled"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-295"
+                ],
+                "security-severity": "8.0"
+              },
+              "help": {
+                "text": "Enable certificate verification; trust only valid CAs."
+              }
+            },
+            {
+              "id": "dangerous-code-execution",
+              "name": "Dangerous Code Execution",
+              "shortDescription": {
+                "text": "Dangerous dynamic code execution function detected"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-95"
+                ],
+                "security-severity": "8.0"
+              },
+              "help": {
+                "text": "Avoid dynamic execution; if unavoidable, strictly validate and constrain inputs."
+              }
+            },
+            {
+              "id": "insecure-deserialization",
+              "name": "Insecure Deserialization",
+              "shortDescription": {
+                "text": "Unsafe deserialization of untrusted data"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-502"
+                ],
+                "security-severity": "8.0"
+              },
+              "help": {
+                "text": "Use safe deserialization (e.g. yaml.safe_load, json) and never deserialize untrusted input."
+              }
+            },
+            {
+              "id": "high-entropy-secret-context",
+              "name": "High Entropy Secret Context",
+              "shortDescription": {
+                "text": "Long high-entropy value near a secret-related keyword"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ],
+                "security-severity": "8.0"
+              },
+              "help": {
+                "text": "Review whether the value is a credential, token, or key; move real secrets to a vault."
+              }
+            },
+            {
+              "id": "path-traversal-risk",
+              "name": "Path Traversal Risk",
+              "shortDescription": {
+                "text": "Unsafe file access from user-controlled input"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-22"
+                ],
+                "security-severity": "8.0"
+              },
+              "help": {
+                "text": "Normalize paths and enforce an allow-listed base directory before file access."
+              }
+            },
+            {
+              "id": "sql-injection-risk",
+              "name": "SQL Injection Risk",
+              "shortDescription": {
+                "text": "SQL query appears built from string concatenation or interpolation"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-89"
+                ],
+                "security-severity": "8.0"
+              },
+              "help": {
+                "text": "Use parameterized queries / prepared statements instead of string building."
+              }
+            },
+            {
+              "id": "sensitive-file-present",
+              "name": "Sensitive File Present",
+              "shortDescription": {
+                "text": "Sensitive configuration, credential, database, or backup file found"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-552"
+                ],
+                "security-severity": "5.0"
+              },
+              "help": {
+                "text": "Keep sensitive files out of source control and public web roots."
+              }
+            },
+            {
+              "id": "broad-cors-policy",
+              "name": "Broad CORS Policy",
+              "shortDescription": {
+                "text": "Broad CORS policy allows requests from any origin"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-942"
+                ],
+                "security-severity": "5.0"
+              },
+              "help": {
+                "text": "Restrict CORS origins to an explicit allow-list of trusted domains."
+              }
+            },
+            {
+              "id": "debug-mode-enabled",
+              "name": "Debug Mode Enabled",
+              "shortDescription": {
+                "text": "Debug or development mode appears enabled"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-489"
+                ],
+                "security-severity": "5.0"
+              },
+              "help": {
+                "text": "Disable debug/development mode in production builds."
+              }
+            },
+            {
+              "id": "insecure-http-url",
+              "name": "Insecure HTTP URL",
+              "shortDescription": {
+                "text": "Insecure HTTP URL detected instead of HTTPS"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-319"
+                ],
+                "security-severity": "5.0"
+              },
+              "help": {
+                "text": "Use HTTPS for network communication."
+              }
+            },
+            {
+              "id": "weak-cryptography",
+              "name": "Weak Cryptography",
+              "shortDescription": {
+                "text": "Weak or broken cryptographic algorithm used in a security context"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-327"
+                ],
+                "security-severity": "5.0"
+              },
+              "help": {
+                "text": "Use modern algorithms (SHA-256+, bcrypt/argon2 for passwords, AES-GCM for ciphers)."
+              }
+            },
+            {
+              "id": "sensitive-data-in-logs",
+              "name": "Sensitive Data in Logs",
+              "shortDescription": {
+                "text": "Secret or credential appears to be written to logs/console"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-532"
+                ],
+                "security-severity": "5.0"
+              },
+              "help": {
+                "text": "Never log secrets; redact sensitive fields before logging."
+              }
+            },
+            {
+              "id": "suspicious-security-comment",
+              "name": "Suspicious Security Comment",
+              "shortDescription": {
+                "text": "Security-related TODO, FIXME, or temporary bypass comment found"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-546"
+                ],
+                "security-severity": "2.0"
+              },
+              "help": {
+                "text": "Resolve security-related temporary comments before release."
+              }
+            },
+            {
+              "id": "unpinned-dependency",
+              "name": "Unpinned Dependency",
+              "shortDescription": {
+                "text": "Unpinned Dependency"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "CWE-1104"
+                ],
+                "security-severity": "2.0"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "hardcoded-secret",
+          "level": "error",
+          "message": {
+            "text": "Possible hardcoded secret or credential found"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/config.js"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "confidence": 1.0,
+            "cwe": "CWE-798",
+            "language": "JavaScript"
+          }
+        },
+        {
+          "ruleId": "vulnerable-dependency",
+          "level": "error",
+          "message": {
+            "text": "flask 0.12.2 - CVE-2018-1000656: Flask is vulnerable to Denial of Service via incorrect encoding of JSON data"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "requirements.txt"
+                },
+                "region": {
+                  "startLine": 2
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "confidence": 0.9,
+            "cwe": "CWE-20",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "vulnerable-dependency",
+          "level": "error",
+          "message": {
+            "text": "pyyaml 5.1 - CVE-2019-20477: Deserialization of Untrusted Data in PyYAML"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "requirements.txt"
+                },
+                "region": {
+                  "startLine": 4
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "confidence": 0.9,
+            "cwe": "CWE-502",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "disabled-tls-verification",
+          "level": "error",
+          "message": {
+            "text": "TLS/certificate verification appears disabled"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/insecure_examples.py"
+                },
+                "region": {
+                  "startLine": 24
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "confidence": 0.85,
+            "cwe": "CWE-295",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "dangerous-code-execution",
+          "level": "error",
+          "message": {
+            "text": "Dangerous dynamic code execution function detected"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/app.py"
+                },
+                "region": {
+                  "startLine": 6
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "confidence": 0.8,
+            "cwe": "CWE-95",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "dangerous-code-execution",
+          "level": "error",
+          "message": {
+            "text": "Dangerous dynamic code execution function detected"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/app.py"
+                },
+                "region": {
+                  "startLine": 9
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "confidence": 0.8,
+            "cwe": "CWE-95",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "insecure-deserialization",
+          "level": "error",
+          "message": {
+            "text": "Unsafe deserialization of untrusted data"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/insecure_examples.py"
+                },
+                "region": {
+                  "startLine": 19
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "confidence": 0.65,
+            "cwe": "CWE-502",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "high-entropy-secret-context",
+          "level": "error",
+          "message": {
+            "text": "Long high-entropy value near a secret-related keyword"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": ".env"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "confidence": 0.6,
+            "cwe": "CWE-798",
+            "language": "Dotenv"
+          }
+        },
+        {
+          "ruleId": "path-traversal-risk",
+          "level": "error",
+          "message": {
+            "text": "Unsafe file access from user-controlled input"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/app.py"
+                },
+                "region": {
+                  "startLine": 7
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "confidence": 0.6,
+            "cwe": "CWE-22",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "path-traversal-risk",
+          "level": "error",
+          "message": {
+            "text": "Unsafe file access from user-controlled input"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/app.py"
+                },
+                "region": {
+                  "startLine": 8
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "confidence": 0.6,
+            "cwe": "CWE-22",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "sql-injection-risk",
+          "level": "error",
+          "message": {
+            "text": "SQL query appears built from string concatenation or interpolation"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/insecure_examples.py"
+                },
+                "region": {
+                  "startLine": 29
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "confidence": 0.6,
+            "cwe": "CWE-89",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "hardcoded-secret",
+          "level": "error",
+          "message": {
+            "text": "Possible hardcoded secret or credential found"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/config.js"
+                },
+                "region": {
+                  "startLine": 2
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "confidence": 0.55,
+            "cwe": "CWE-798",
+            "language": "JavaScript"
+          }
+        },
+        {
+          "ruleId": "vulnerable-dependency",
+          "level": "warning",
+          "message": {
+            "text": "lodash 4.17.4 - CVE-2020-28500: Regular Expression Denial of Service (ReDoS) in lodash"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package.json"
+                },
+                "region": {
+                  "startLine": 6
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MED",
+            "confidence": 0.9,
+            "cwe": "CWE-1333",
+            "language": "JavaScript"
+          }
+        },
+        {
+          "ruleId": "vulnerable-dependency",
+          "level": "warning",
+          "message": {
+            "text": "minimist 1.2.0 - CVE-2020-7598: Prototype Pollution in minimist"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package.json"
+                },
+                "region": {
+                  "startLine": 7
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MED",
+            "confidence": 0.9,
+            "cwe": "CWE-1321",
+            "language": "JavaScript"
+          }
+        },
+        {
+          "ruleId": "vulnerable-dependency",
+          "level": "warning",
+          "message": {
+            "text": "jquery 3.3.1 - CVE-2019-11358: XSS in jQuery as used in Drupal, Backdrop CMS, and other products"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package.json"
+                },
+                "region": {
+                  "startLine": 8
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MED",
+            "confidence": 0.9,
+            "cwe": "CWE-1321",
+            "language": "JavaScript"
+          }
+        },
+        {
+          "ruleId": "vulnerable-dependency",
+          "level": "warning",
+          "message": {
+            "text": "requests 2.19.1 - CVE-2024-47081: Requests vulnerable to .netrc credentials leak via malicious URLs"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "requirements.txt"
+                },
+                "region": {
+                  "startLine": 3
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MED",
+            "confidence": 0.9,
+            "cwe": "CWE-522",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "sensitive-file-present",
+          "level": "warning",
+          "message": {
+            "text": "Sensitive configuration, credential, database, or backup file found"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": ".env"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MED",
+            "confidence": 0.8,
+            "cwe": "CWE-552",
+            "language": "Dotenv"
+          }
+        },
+        {
+          "ruleId": "sensitive-file-present",
+          "level": "warning",
+          "message": {
+            "text": "Sensitive configuration, credential, database, or backup file found"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "backup.sql"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MED",
+            "confidence": 0.8,
+            "cwe": "CWE-552",
+            "language": "SQL"
+          }
+        },
+        {
+          "ruleId": "broad-cors-policy",
+          "level": "warning",
+          "message": {
+            "text": "Broad CORS policy allows requests from any origin"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/server.js"
+                },
+                "region": {
+                  "startLine": 2
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MED",
+            "confidence": 0.8,
+            "cwe": "CWE-942",
+            "language": "JavaScript"
+          }
+        },
+        {
+          "ruleId": "debug-mode-enabled",
+          "level": "warning",
+          "message": {
+            "text": "Debug or development mode appears enabled"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/app.py"
+                },
+                "region": {
+                  "startLine": 5
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MED",
+            "confidence": 0.75,
+            "cwe": "CWE-489",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "insecure-http-url",
+          "level": "warning",
+          "message": {
+            "text": "Insecure HTTP URL detected instead of HTTPS"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/insecure_examples.py"
+                },
+                "region": {
+                  "startLine": 38
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MED",
+            "confidence": 0.55,
+            "cwe": "CWE-319",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "weak-cryptography",
+          "level": "warning",
+          "message": {
+            "text": "Weak or broken cryptographic algorithm used in a security context"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/insecure_examples.py"
+                },
+                "region": {
+                  "startLine": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MED",
+            "confidence": 0.5,
+            "cwe": "CWE-327",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "sensitive-data-in-logs",
+          "level": "warning",
+          "message": {
+            "text": "Secret or credential appears to be written to logs/console"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/insecure_examples.py"
+                },
+                "region": {
+                  "startLine": 35
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MED",
+            "confidence": 0.5,
+            "cwe": "CWE-532",
+            "language": "Python"
+          }
+        },
+        {
+          "ruleId": "suspicious-security-comment",
+          "level": "note",
+          "message": {
+            "text": "Security-related TODO, FIXME, or temporary bypass comment found"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "README.md"
+                },
+                "region": {
+                  "startLine": 8
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "confidence": 0.7,
+            "cwe": "CWE-546",
+            "language": "Markdown"
+          }
+        },
+        {
+          "ruleId": "suspicious-security-comment",
+          "level": "note",
+          "message": {
+            "text": "Security-related TODO, FIXME, or temporary bypass comment found"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/server.js"
+                },
+                "region": {
+                  "startLine": 3
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "confidence": 0.7,
+            "cwe": "CWE-546",
+            "language": "JavaScript"
+          }
+        },
+        {
+          "ruleId": "unpinned-dependency",
+          "level": "note",
+          "message": {
+            "text": "Dependency 'certifi' is unpinned; cannot verify against advisories"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "requirements.txt"
+                },
+                "region": {
+                  "startLine": 6
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "confidence": 0.4,
+            "cwe": "CWE-1104",
+            "language": "Python"
+          }
+        }
+      ]
+    }
+  ]
+}
