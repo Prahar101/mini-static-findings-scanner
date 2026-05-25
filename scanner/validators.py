@@ -1,17 +1,12 @@
-"""Composable false-positive validators.
+"""False-positive validators.
 
-After a rule's regex matches, the engine runs that rule's validators to either
-suppress the match (clear false positive) or nudge a confidence score up/down.
-Everything here is deterministic and explainable -- no models, no training.
+After a rule's regex matches, each validator the rule lists either suppresses the
+match or nudges its confidence. All deterministic, no ML.
 
-A validator takes a `MatchContext` and returns a `ValidationResult`:
-  * delta:    confidence adjustment in [-1, 1]
-  * suppress: if True, the finding is dropped entirely
-  * reason:   short human-readable justification (handy for debugging/writeups)
-
-The engine starts from `rule.confidence_base`, applies each delta, clamps to
-[0, 1], and drops the finding if any validator suppresses it or the final score
-falls below the configured threshold.
+A validator takes a MatchContext and returns a ValidationResult (delta, suppress,
+reason). The engine starts at rule.confidence_base, adds the deltas, clamps to
+[0, 1], and drops the finding if a validator suppresses it or it lands below the
+threshold.
 """
 
 import re
@@ -39,7 +34,7 @@ class ValidationResult:
     reason: str = ""
 
 
-# --- Signatures of real provider credentials (high precision) ------------------
+# Prefixes of real provider tokens; a prefix match is a strong signal.
 KNOWN_SECRET_PREFIXES = (
     "AKIA", "ASIA",                       # AWS access key id
     "ghp_", "gho_", "ghs_", "ghu_", "ghr_", "github_pat_",  # GitHub tokens
@@ -54,7 +49,7 @@ KNOWN_SECRET_PREFIXES = (
 
 PRIVATE_KEY_MARKER = "-----BEGIN"
 
-# --- Placeholder / dummy values that are NOT real secrets ----------------------
+# Values that look like secrets but aren't.
 PLACEHOLDER_TOKENS = (
     "your_", "your-", "yourkey", "changeme", "change_me", "placeholder",
     "example", "dummy", "sample", "redacted", "xxxx", "todo", "fixme",
@@ -62,7 +57,7 @@ PLACEHOLDER_TOKENS = (
     "insert_", "replace_", "my_secret", "my_token", "my_api",
 )
 
-# --- Things that mean "read from environment", i.e. NOT hardcoded --------------
+# Signs the value comes from the environment, not a hardcoded literal.
 ENV_REFERENCE_PATTERNS = (
     re.compile(r"process\.env\b", re.IGNORECASE),
     re.compile(r"os\.environ", re.IGNORECASE),
@@ -74,7 +69,7 @@ ENV_REFERENCE_PATTERNS = (
     re.compile(r"config\.(get|require)\s*\(", re.IGNORECASE),
 )
 
-# --- URLs that are not a real transport-security problem -----------------------
+# Hosts where an http:// link isn't really a transport risk.
 BENIGN_URL_HOSTS = (
     "localhost", "127.0.0.1", "0.0.0.0", "::1",
     "example.com", "example.org", "example.net",
@@ -133,7 +128,7 @@ def _looks_sequential_or_repeated(value: str) -> bool:
     return any(low in seq for seq in sequences if len(low) >= 4)
 
 
-# --- Validators ----------------------------------------------------------------
+# The validators themselves.
 
 def v_secret_prefix(ctx: MatchContext) -> ValidationResult:
     value = extract_value(ctx.line)
@@ -189,6 +184,40 @@ def v_in_comment(ctx: MatchContext) -> ValidationResult:
     return ValidationResult()
 
 
+def _inside_triple_quote(lines: List[str], idx: int) -> bool:
+    """Is line `idx` inside a triple-quoted block? Scans earlier lines toggling
+    on each `\"\"\"`/`'''`. A heuristic, but enough to skip docstrings."""
+    in_str = False
+    delim = None
+    for line in lines[:idx]:
+        pos = 0
+        while True:
+            best, best_pos = None, -1
+            for d in ('"""', "'''"):
+                p = line.find(d, pos)
+                if p != -1 and (best_pos == -1 or p < best_pos):
+                    best, best_pos = d, p
+            if best is None:
+                break
+            if not in_str:
+                in_str, delim = True, best
+            elif delim == best:
+                in_str, delim = False, None
+            pos = best_pos + 3
+    return in_str
+
+
+def v_code_context(ctx: MatchContext) -> ValidationResult:
+    """Drop matches that aren't real code: ones in a comment or inside a
+    triple-quoted string. The "code does X" rules (eval/exec, SQLi, weak crypto)
+    use this so a call merely named in a comment or docstring doesn't fire."""
+    if is_comment_line(ctx.line):
+        return ValidationResult(suppress=True, reason="match is in a comment, not code")
+    if _inside_triple_quote(ctx.lines, ctx.line_index):
+        return ValidationResult(suppress=True, reason="match is inside a string/docstring, not code")
+    return ValidationResult()
+
+
 def v_test_path(ctx: MatchContext) -> ValidationResult:
     parts = re.split(r"[/\\.]", ctx.rel_path.lower())
     if any(hint in parts for hint in TEST_PATH_HINTS):
@@ -203,17 +232,15 @@ VALIDATORS: Dict[str, Callable[[MatchContext], ValidationResult]] = {
     "env_reference": v_env_reference,
     "benign_url": v_benign_url,
     "in_comment": v_in_comment,
+    "code_context": v_code_context,
     "test_path": v_test_path,
 }
 
 
 def evaluate(ctx: MatchContext) -> ValidationResult:
-    """Run a rule's validators and fold them into one result.
-
-    Returns a ValidationResult whose `delta` is the summed confidence
-    adjustment and `suppress` is True if any validator vetoed the match.
-    `reason` concatenates the individual reasons for transparency.
-    """
+    """Run a rule's validators and fold them into one result. The delta is the
+    summed confidence adjustment; suppress is True if any validator vetoed the
+    match; reason joins the individual reasons so the verdict is traceable."""
     total = 0.0
     reasons: List[str] = []
     for name in ctx.rule.validators:

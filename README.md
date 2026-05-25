@@ -1,6 +1,6 @@
 # Mini Static Findings Scanner
 
-A small command-line tool that scans a folder of source files and reports likely security and code-quality problems. It stays simple and explainable: everything is plain regex plus a few deterministic heuristics, no machine learning, so every finding traces back to a specific rule you can read. It runs fully offline by default; the only network call is the optional dependency check (`--online`), which looks up known CVEs from OSV.dev and sends nothing but package names and versions.
+This is a mini command-line tool that scans a folder of source files and reports likely security and code-quality problems. It stays simple and explainable, everything is plain regex plus a few deterministic heuristics, no machine learning, so every finding traces back to a specific rule you can read. It runs fully offline by default and the only network call is the optional dependency check (`--online`), which looks up known CVEs from OSV.dev and sends nothing but package names and versions.
 
 ## 1. Highlights
 
@@ -8,7 +8,7 @@ A small command-line tool that scans a folder of source files and reports likely
 
 1.2 **A confidence score on every finding**, tracked separately from severity, so results can be triaged instead of just listed.
 
-1.3 **A false-positive validator layer** that drops the usual noise (placeholders, env-var reads, example URLs, `# nosec` lines).
+1.3 **A false-positive validator layer** that drops the usual noise (placeholders, env-var reads, example URLs, `# nosec` lines, and risky calls that only appear in comments or docstrings).
 
 1.4 **Five outputs**: console, JSON, Markdown, SARIF (for GitHub code scanning), and a self-contained interactive HTML report.
 
@@ -137,7 +137,7 @@ Drop a `scanner.config.json` next to where you run the tool (it is picked up aut
 
 ## 8. Performance
 
-All numbers below were measured on this machine (Python 3.11, 8 logical cores) using the committed benchmark script. Regenerate them any time with `python benchmarks/benchmark.py` (it needs matplotlib; the scanner itself does not, and the charts are committed so you don't have to run it).
+All numbers below were measured on this machine (Python 3.11, 8 logical cores) using the committed benchmark script. Regenerate them any time with `python benchmarks/benchmark.py` (it needs matplotlib but the scanner itself does not, and the charts are committed so you don't have to run it).
 
 8.1 Single-core throughput is around 750 files per second on typical source files.
 
@@ -204,7 +204,7 @@ See `FINDINGS.md` for the writeup on the rules, the false positives and negative
 
 ## 12. Acknowledgement
 
-Thank you for the assignment. I genuinely enjoyed building this project. What began as a simple pattern scanner became a useful exercise in balancing detection coverage, false-positive reduction, performance, and developer usability while keeping the scope aligned with the brief. I kept it scoped to the assignment, though there is more I could add with more time. I hope it meets what the team is looking for.
+Thank you for the assignment. I really enjoyed working on this project and found it to be a useful exercise in balancing detection coverage, false-positive reduction, performance, and developer usability while staying aligned with the assignment scope. While there are several possible extensions, I focused on delivering a practical and well-tested implementation within the brief.
 
 Sincerely,
 

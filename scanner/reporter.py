@@ -1,4 +1,4 @@
-"""Output: console (assignment-style), JSON, Markdown, and SARIF reports."""
+"""Reporters: console, JSON, Markdown, SARIF, and a self-contained HTML page."""
 
 import json
 import re
@@ -45,7 +45,7 @@ def print_findings(findings: List[Finding], verbose: bool = False) -> None:
     sev_w = max(len("SEVERITY"), max(len(f.severity) for f in findings))
     loc_w = max(len("LOCATION"), max(len(f"{f.file}:{f.line}") for f in findings))
 
-    # Numbered table with headings; row content matches the assignment example:
+    # Numbered table laid out like the example in the brief:
     #   1  HIGH  src/config.js:12  Possible hardcoded secret
     print(f"{'#':>{num_w}}  {'SEVERITY':<{sev_w}}  {'LOCATION':<{loc_w}}  SHORT EXPLANATION")
     print(f"{'-' * num_w}  {'-' * sev_w}  {'-' * loc_w}  {'-' * len('SHORT EXPLANATION')}")
@@ -119,11 +119,11 @@ def _oneline(text: str) -> str:
     return " ".join(text.split())
 
 
-# --- SARIF 2.1.0 (GitHub code scanning / VS Code SARIF viewer) ------------------
+# SARIF 2.1.0, for GitHub code scanning and the VS Code SARIF viewer.
 
-# SARIF severity is expressed as "level"; map our labels onto it.
+# SARIF carries severity in a "level" field; map our labels onto it.
 _SARIF_LEVEL = {"HIGH": "error", "MED": "warning", "LOW": "note"}
-# GitHub renders findings using a numeric "security-severity" (CVSS-like 0-10).
+# GitHub also wants a numeric "security-severity" (CVSS-like, 0-10).
 _SECURITY_SEVERITY = {"HIGH": "8.0", "MED": "5.0", "LOW": "2.0"}
 
 
@@ -197,7 +197,7 @@ def write_sarif_report(findings: List[Finding], output_path: Path) -> None:
     output_path.write_text(json.dumps(sarif, indent=2), encoding="utf-8")
 
 
-# --- Self-contained HTML review UI (no server, no dependencies) -----------------
+# Self-contained HTML review UI: no server, no dependencies.
 
 _HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">

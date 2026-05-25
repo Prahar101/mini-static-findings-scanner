@@ -1,8 +1,8 @@
 """Lightweight language detection by file extension.
 
-Used to tag each finding with the language it came from and to produce a
-per-language breakdown in reports. Extension-based (like GitHub Linguist's first
-pass) -- deterministic, no content parsing, no dependencies.
+This tags each finding with the language it came from and drives the per-language
+breakdown in reports. Extension-based, like GitHub Linguist's first pass:
+deterministic, no content parsing, no dependencies.
 """
 
 from pathlib import Path

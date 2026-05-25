@@ -35,6 +35,18 @@ class TestFalsePositiveHandling(unittest.TestCase):
         kept = scan_files(files, min_confidence=0.9)
         self.assertNotIn("Hardcoded Secret", rules_for(kept, "c.js"))
 
+    def test_dangerous_call_in_comment_suppressed(self):
+        f = scan_files({"a.py": "# eval(user_input) only mentioned in a comment\n"})
+        self.assertNotIn("Dangerous Code Execution", rules_for(f, "a.py"))
+
+    def test_dangerous_call_in_docstring_suppressed(self):
+        f = scan_files({"a.py": 'doc = """\neval(x)\nexec(y)\nsubprocess.run(c, shell=True)\n"""\n'})
+        self.assertNotIn("Dangerous Code Execution", rules_for(f, "a.py"))
+
+    def test_real_dangerous_call_still_flagged(self):
+        f = scan_files({"a.py": "eval(user_input)\n"})
+        self.assertIn("Dangerous Code Execution", rules_for(f, "a.py"))
+
 
 if __name__ == "__main__":
     unittest.main()

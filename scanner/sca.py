@@ -1,15 +1,15 @@
-"""Software Composition Analysis (SCA): find known-vulnerable dependencies.
+"""Software Composition Analysis: find known-vulnerable dependencies.
 
-We parse dependency manifests (requirements.txt, package.json, package-lock.json),
-then ask the public OSV.dev API whether each pinned (name, version) is affected by
-a known advisory. OSV performs the version-range match server-side, which removes
-the most common SCA false positive ("package X is vulnerable *somewhere*").
+Parses the dependency manifests (requirements.txt, package.json,
+package-lock.json) and asks the public OSV.dev API whether each pinned
+(name, version) has a known advisory. OSV does the version-range match on its
+side, which avoids the usual SCA false positive of flagging a package that is
+only vulnerable in some other version.
 
-Design choices for robustness:
-  * stdlib `urllib` only (no `requests` dependency)
-  * `--offline` skips all network calls and still reports unpinned dependencies
-  * network/parse errors degrade gracefully and never crash the scan
-  * unpinned/range versions cannot be verified -> reported at LOW confidence
+It sticks to stdlib urllib, so there's no requests dependency. Offline mode
+skips the network and still reports unpinned deps. Network and parse errors are
+caught so a bad manifest or no internet never crashes the scan, and a version
+we can't pin down is reported at low confidence.
 """
 
 import json
@@ -30,10 +30,10 @@ OSV_TIMEOUT = 10
 
 ECOSYSTEM_LANGUAGE = {"PyPI": "Python", "npm": "JavaScript"}
 
-try:  # canonical PEP 440 parsing; degrade gracefully if unavailable
+try:  # use packaging for PEP 440 version parsing when it's installed
     from packaging.requirements import Requirement
     HAS_PACKAGING = True
-except Exception:  # pragma: no cover - exercised only when packaging is missing
+except Exception:  # pragma: no cover - only hit when packaging is missing
     HAS_PACKAGING = False
 
 
@@ -47,7 +47,7 @@ class Dependency:
     line: int
 
 
-# --- Manifest discovery & parsing ---------------------------------------------
+# Manifest discovery and parsing.
 
 def find_manifests(root: Path) -> List[Path]:
     names = {"requirements.txt", "package.json", "package-lock.json"}
@@ -125,7 +125,7 @@ def _normalize_npm_version(spec: str):
         return spec, True
     m = re.match(r"[~^>=<\s]*(\d+\.\d+\.\d+)", spec)
     if m:
-        return m.group(1), False  # representative version, not exact -> low confidence
+        return m.group(1), False  # a range, not an exact pin, so flag it low-confidence
     return None, False
 
 
@@ -182,7 +182,7 @@ def _dedupe(deps: List[Dependency]) -> List[Dependency]:
     return out
 
 
-# --- OSV lookup ----------------------------------------------------------------
+# OSV lookup.
 
 def query_osv(name: str, ecosystem: str, version: str) -> List[dict]:
     """Return OSV advisories affecting (name, version). [] on any failure."""
@@ -215,7 +215,7 @@ def _severity_from_osv(vuln: dict) -> str:
         except (TypeError, ValueError):
             continue
         return HIGH if num >= 7 else MED if num >= 4 else LOW
-    return MED  # unknown -> treat dependency vulns as at least medium
+    return MED  # no severity given; default a dependency vuln to medium
 
 
 def _first_fixed(vuln: dict) -> Optional[str]:
@@ -239,7 +239,7 @@ def _cwe_from_osv(vuln: dict) -> Optional[str]:
     return cwes[0] if cwes else None
 
 
-# --- Top-level entry point -----------------------------------------------------
+# Top-level entry point.
 
 def scan_dependencies(root: Path, offline: bool = False, jobs: Optional[int] = None) -> List[Finding]:
     findings: List[Finding] = []
@@ -265,7 +265,7 @@ def scan_dependencies(root: Path, offline: bool = False, jobs: Optional[int] = N
     if offline or not pinned:
         return findings
 
-    # OSV lookups are network-bound: query dependencies concurrently.
+    # OSV calls are network-bound, so run them across a thread pool.
     workers = jobs if (jobs and jobs > 0) else min(16, (os.cpu_count() or 4) + 4)
     workers = max(1, min(workers, len(pinned)))
     if workers <= 1:

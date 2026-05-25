@@ -20,3 +20,14 @@ DOCS_URL = "http://example.com/docs"
 
 # A real-looking secret that WOULD fire, explicitly acknowledged -> suppressed (nosec).
 password = "Sup3rS3cr3tValue123"  # nosec - test fixture, not a real credential
+
+# Dangerous calls mentioned only in a comment -> suppressed (code_context).
+# eval(user_input) and os.system(cmd) here are documentation, not real calls.
+
+# Dangerous calls inside a docstring/string -> suppressed (code_context).
+USAGE = """
+Risky calls, shown for documentation only:
+    eval(expr)
+    exec(code)
+    subprocess.run(cmd, shell=True)
+"""

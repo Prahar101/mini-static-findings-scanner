@@ -1,9 +1,8 @@
 """Core data structures for the scanner.
 
-These are plain data containers (dataclasses) describing the *shape* of a
-detection rule and a finding. They are deliberately not "models" in any
-machine-learning sense: the whole scanner is deterministic and heuristic so
-that every finding is explainable.
+Plain dataclasses describing a detection rule and a finding. They are not
+"models" in the machine-learning sense; the scanner is fully deterministic and
+heuristic, so every finding traces back to a rule you can read.
 """
 
 from dataclasses import dataclass, field
@@ -32,16 +31,14 @@ class Rule:
     # Entropy detection tuning (used by entropy_context rules).
     entropy_threshold: Optional[float] = None
 
-    # Context gating: a regex match only fires if one of these keywords appears
-    # within `context_window` lines of the match. Empty list = no gating.
+    # Context gating: a regex match only fires if one of these keywords appears within `context_window` lines of the match. Empty list = no gating.
     context_keywords: List[str] = field(default_factory=list)
     context_window: int = 0
 
     # If any of these appear on the matched line, the match is suppressed.
     negative_keywords: List[str] = field(default_factory=list)
 
-    # Names of validator functions (see validators.py) applied after a match to
-    # adjust confidence or suppress false positives.
+    # Names of validator functions (see validators.py) applied after a match to adjust confidence or suppress false positives.
     validators: List[str] = field(default_factory=list)
 
     # Starting confidence (0..1) before validators adjust it.

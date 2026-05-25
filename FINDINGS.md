@@ -42,6 +42,7 @@ The validator layer suppresses the common false positives before they reach the 
 - Local and reserved URLs: `http://localhost`, `http://example.com`, and XML namespaces are allowlisted instead of flagged.
 - Non-security hashing: md5/sha1 only fire when a security keyword (password, token, key) is nearby, so a cache key or ETag is left alone.
 - Acknowledged findings: a line ending in `# nosec` is skipped.
+- Comments and docstrings: `eval`, `exec`, `subprocess(..., shell=True)` and the other "code does X" patterns are dropped when they only appear in a `#` comment or a triple-quoted string, since that text isn't executable code.
 
 What gets through after that is low-confidence by construction. The confidence score ranks it to the bottom, and `--min-confidence 0.6` removes it. One case the scanner reports on purpose rather than suppressing: an `http://` link inside a comment. It's down-weighted, but still listed, because a commented-out insecure endpoint is often worth a look.
 

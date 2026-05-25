@@ -13,7 +13,7 @@ from scanner.rules import IGNORE_DIRS, RULES, TEXT_EXTENSIONS
 from scanner.schema import SEVERITY_ORDER, Finding, Rule
 from scanner.validators import MatchContext, evaluate, is_suppressed_inline
 
-MAX_FILE_BYTES = 2_000_000  # skip files larger than ~2MB (likely data/minified)
+MAX_FILE_BYTES = 2_000_000  # skip files larger than 2MB (likely data/minified)
 MAX_LINE_LENGTH = 5_000     # cap line length fed to regexes (ReDoS / backtracking guard)
 PARALLEL_THRESHOLD = 3000   # below this many files, sequential beats process-pool startup
 
@@ -29,9 +29,8 @@ def scan_folder(
     active_rules = [r for r in (rules if rules is not None else RULES) if r.enabled]
     files = list(iter_files(root))
 
-    # File scanning is CPU-bound (regex), so it parallelises across processes, not
-    # threads (the GIL serialises threaded regex work). Small trees stay sequential
-    # because process-pool startup costs more than it saves.
+    # Regex work is CPU-bound, so threads don't help (GIL), use processes instead.
+    # Small trees stay sequential, since spawning processes costs more than it saves.
     workers = resolve_workers(jobs, len(files))
     if workers > 1 and len(files) >= PARALLEL_THRESHOLD:
         findings = _scan_parallel(root, files, active_rules, workers)
@@ -71,8 +70,7 @@ def _scan_sequential(root: Path, files: List[Path], rules: List[Rule]) -> List[F
     return findings
 
 
-# Worker-process globals, set once per process by the initializer (cheaper than
-# pickling the root and rule set with every task).
+# Set once per worker by the initializer so each task doesn't re-pickle these.
 _WORKER_ROOT: Optional[Path] = None
 _WORKER_RULES: Optional[List[Rule]] = None
 
@@ -97,14 +95,12 @@ def _scan_parallel(root: Path, files: List[Path], rules: List[Rule], workers: in
                 findings.extend(result)
             return findings
     except Exception:
-        # Process pools can be unavailable in restricted environments; never fail
-        # the scan over it -- fall back to a sequential pass.
+        # Some environments block process pools, fall back to sequential.
         return _scan_sequential(root, files, rules)
 
 
 def iter_files(root: Path) -> Iterable[Path]:
-    # os.walk(followlinks=False) does not descend into symlinked directories,
-    # which prevents loops and escaping the target tree via a symlinked dir.
+    # followlinks=False keeps us out of symlinked dirs.
     root_resolved = root.resolve()
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
         # Prune ignored directories in place so we never descend into them.
@@ -155,8 +151,8 @@ def scan_file_content(file_path: Path, rel_path: str, rules: List[Rule]) -> List
     except OSError:
         return []
 
-    # Truncate each line before it ever reaches a regex: bounds worst-case
-    # backtracking so a single crafted/minified line cannot stall the scan.
+    # Cap line length before the regex sees it, so one giant line
+    # can't blow up backtracking.
     lines = [ln[:MAX_LINE_LENGTH] for ln in text.splitlines()]
 
     findings: List[Finding] = []
@@ -237,7 +233,7 @@ def _context_satisfied(rule: Rule, lines: List[str], idx: int) -> bool:
     lo = max(0, idx - rule.context_window)
     hi = min(len(lines), idx + rule.context_window + 1)
     window = " ".join(lines[lo:hi])
-    # Word-boundary match so e.g. "hash" does not match inside "hashlib".
+    # Word-boundary match so things like "hash" does not match inside "hashlib".
     return any(re.search(rf"\b{re.escape(kw)}\b", window, re.IGNORECASE)
                for kw in rule.context_keywords)
 
