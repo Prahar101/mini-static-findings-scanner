@@ -1,8 +1,5 @@
-"""Core data structures for the scanner.
-
-Plain dataclasses describing a detection rule and a finding. They are not
-"models" in the machine-learning sense; the scanner is fully deterministic and
-heuristic, so every finding traces back to a rule you can read.
+"""
+Core data structures for the scanner.
 """
 
 from dataclasses import dataclass, field
