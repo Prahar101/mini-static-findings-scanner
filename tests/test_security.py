@@ -1,5 +1,4 @@
-"""Tests for the scanner's own hardening (ReDoS guard, symlink containment)."""
-
+#Tests for the scanner's own hardening.
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,8 +13,8 @@ class TestReDoSGuard(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             (Path(t) / "a.js").write_text(start + tail, encoding="utf-8")
             rules = {f.rule for f in scan_folder(Path(t), run_sca=False)}
-        self.assertIn("Broad CORS Policy", rules)    # near the start -> scanned
-        self.assertNotIn("Hardcoded Secret", rules)  # past the cap -> never reaches a regex
+        self.assertIn("Broad CORS Policy", rules)    
+        self.assertNotIn("Hardcoded Secret", rules)  
 
 
 class TestSymlinkContainment(unittest.TestCase):
@@ -33,8 +32,8 @@ class TestSymlinkContainment(unittest.TestCase):
                 self.skipTest("symlink creation not permitted on this platform")
 
             files = {f.file for f in scan_folder(root, run_sca=False)}
-        self.assertIn("normal.js", files)       # regular files still scanned
-        self.assertNotIn("link.js", files)      # symlink escaping the tree is skipped
+        self.assertIn("normal.js", files)       
+        self.assertNotIn("link.js", files)     
 
 
 if __name__ == "__main__":

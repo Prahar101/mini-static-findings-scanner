@@ -1,19 +1,3 @@
-"""Mini Static Findings Scanner - CLI.
-
-Installed as the `scanner` command (see pyproject.toml), e.g.:
-    scanner ./sample-project
-    scanner ./sample-project --online          # enable OSV dependency CVE lookups
-    scanner ./sample-project --disable-rule "Insecure HTTP URL"
-    scanner ./sample-project --enable-rule "Broad CORS Policy"
-    scanner ./sample-project --config scanner.config.json
-    scanner --list-rules
-
-Also runnable without installing via `python main.py ...`.
-
-If --config is not given, a scanner.config.json in the current directory is
-loaded automatically when present.
-"""
-
 import argparse
 import json
 import sys
@@ -37,14 +21,14 @@ DEFAULT_CONFIG = "scanner.config.json"
 def parse_args(argv=None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="scanner", description="Mini Static Findings Scanner")
     parser.add_argument("path", nargs="?", help="Folder path to scan")
-    parser.add_argument("--json", default="findings.json", help="JSON report path (default: findings.json)")
-    parser.add_argument("--md", default="findings-report.md",
-                        help="Markdown report path (default: findings-report.md). "
-                             "Named to avoid clobbering FINDINGS.md on case-insensitive filesystems.")
+    parser.add_argument("--json", nargs="?", const="findings.json", default=None,
+                        help="Write a JSON report. Default findings.json")
+    parser.add_argument("--md", nargs="?", const="findings-report.md", default=None,
+                        help="Write a Markdown report. Default findings-report.md")
     parser.add_argument("--sarif", nargs="?", const="findings.sarif", default=None,
-                        help="Also write a SARIF report (default path: findings.sarif)")
+                        help="Write a SARIF report. Default findings.sarif")
     parser.add_argument("--html", nargs="?", const="findings.html", default=None,
-                        help="Write an interactive HTML review UI and open it (default: findings.html)")
+                        help="Write an HTML report and open it. Default findings.html")
     parser.add_argument("--min-confidence", type=float, default=None,
                         help="Drop findings below this confidence (0.0-1.0)")
     parser.add_argument("--online", action="store_true",
@@ -71,8 +55,8 @@ def load_config(path: str):
 
 
 def select_rules(all_rules: List, cfg: dict) -> List:
-    """Apply enable/disable lists from config.
-
+    """
+    Apply enable/disable lists from config.
     - enabled_rules (allowlist): if non-empty, ONLY these rules run.
     - disabled_rules (denylist): these rules are turned off.
     Unknown rule names are warned about (typo protection).
@@ -121,7 +105,7 @@ def main(argv=None) -> int:
     if min_confidence is None:
         min_confidence = 0.0
 
-    # CLI --enable-rule / --disable-rule merge with (and extend) the config lists.
+    # CLI --enable-rule / --disable-rule merge with the config lists.
     cfg = dict(cfg)
     cfg["enabled_rules"] = list(cfg.get("enabled_rules") or []) + list(args.enable_rule)
     cfg["disabled_rules"] = list(cfg.get("disabled_rules") or []) + list(args.disable_rule)
@@ -137,29 +121,38 @@ def main(argv=None) -> int:
 
     print_findings(findings, verbose=args.verbose)
 
-    json_path = Path(args.json)
-    write_json_report(findings, json_path)
-    print(f"Wrote JSON report: {json_path}")
+    json_path = args.json
+    md_path = args.md
+    # With no format named, fall back to the default JSON and Markdown pair.
+    if not any([args.json, args.md, args.sarif, args.html]):
+        json_path = "findings.json"
+        md_path = "findings-report.md"
 
-    md_path = Path(args.md)
-    write_markdown_report(findings, md_path)
-    print(f"Wrote Markdown report: {md_path}")
+    if json_path:
+        p = Path(json_path)
+        write_json_report(findings, p)
+        print(f"Wrote JSON report at {p}")
+
+    if md_path:
+        p = Path(md_path)
+        write_markdown_report(findings, p)
+        print(f"Wrote Markdown report at {p}")
 
     if args.sarif:
-        sarif_path = Path(args.sarif)
-        write_sarif_report(findings, sarif_path)
-        print(f"Wrote SARIF report: {sarif_path}")
+        p = Path(args.sarif)
+        write_sarif_report(findings, p)
+        print(f"Wrote SARIF report at {p}")
 
     if args.html:
-        html_path = Path(args.html)
-        write_html_report(findings, html_path)
-        uri = html_path.resolve().as_uri()
-        print(f"Wrote HTML report: {html_path}")
-        print(f"  Open in browser: {uri}")
+        p = Path(args.html)
+        write_html_report(findings, p)
+        uri = p.resolve().as_uri()
+        print(f"Wrote HTML report at {p}")
+        print(f"  Open in your browser at {uri}")
         try:
             webbrowser.open(uri)
         except Exception:
-            pass  # best-effort; the link is already on the console if it didn't open
+            pass
     return 0
 
 

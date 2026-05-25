@@ -1,8 +1,3 @@
-"""Ruthless edge-case tests: empty/huge/binary/unicode files, malformed
-manifests, broken network, symlinks, permission errors, and bad CLI args.
-The tool should degrade gracefully (no crashes, no hangs) on all of them.
-"""
-
 import contextlib
 import io
 import tempfile
@@ -34,8 +29,8 @@ class TestFileEdgeCases(unittest.TestCase):
 
     def test_binary_text_extension_does_not_crash(self):
         with tempfile.TemporaryDirectory() as t:
-            write(t, "a.py", bytes(range(256)) * 200)  # binary bytes in a .py
-            scan_folder(Path(t), run_sca=False)  # must not raise
+            write(t, "a.py", bytes(range(256)) * 200)  
+            scan_folder(Path(t), run_sca=False)  
 
     def test_binary_nontext_extension_skipped(self):
         with tempfile.TemporaryDirectory() as t:
@@ -50,7 +45,7 @@ class TestFileEdgeCases(unittest.TestCase):
 
     def test_duplicate_findings_deduped(self):
         with tempfile.TemporaryDirectory() as t:
-            write(t, "c.py", SECRET)  # may match several secret rules on one line
+            write(t, "c.py", SECRET)  
             findings = scan_folder(Path(t), run_sca=False)
             secrets = [f for f in findings if f.line == 1 and f.category == "Secrets"]
             self.assertEqual(len(secrets), 1)
@@ -58,7 +53,7 @@ class TestFileEdgeCases(unittest.TestCase):
     def test_huge_file_skipped(self):
         with tempfile.TemporaryDirectory() as t:
             write(t, "big.py", SECRET + "\n" + ("x = 1\n" * (MAX_FILE_BYTES // 6 + 500)))
-            self.assertEqual(scan_folder(Path(t), run_sca=False), [])  # >2MB skipped
+            self.assertEqual(scan_folder(Path(t), run_sca=False), [])  
 
     def test_huge_single_line_truncated(self):
         with tempfile.TemporaryDirectory() as t:
@@ -75,7 +70,7 @@ class TestFileEdgeCases(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             write(t, "a.py", SECRET)
             with mock.patch("pathlib.Path.read_text", side_effect=PermissionError("denied")):
-                self.assertEqual(scan_folder(Path(t), run_sca=False), [])  # error swallowed
+                self.assertEqual(scan_folder(Path(t), run_sca=False), [])  
 
     def test_broken_symlink(self):
         with tempfile.TemporaryDirectory() as t:
@@ -85,7 +80,7 @@ class TestFileEdgeCases(unittest.TestCase):
                 (root / "link.py").symlink_to(root / "missing.py")
             except (OSError, NotImplementedError):
                 self.skipTest("symlinks not permitted on this platform")
-            findings = scan_folder(root, run_sca=False)  # broken link must not crash
+            findings = scan_folder(root, run_sca=False)  
             self.assertIn("real.py", {f.file for f in findings})
 
 
@@ -94,17 +89,17 @@ class TestManifestEdgeCases(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             p = write(t, "package.json", "{ not valid json ")
             self.assertEqual(sca.parse_package_json(p, "package.json"), [])
-            scan_folder(Path(t), offline=True)  # full scan must not crash
+            scan_folder(Path(t), offline=True)  
 
     def test_malformed_requirements(self):
         with tempfile.TemporaryDirectory() as t:
             p = write(t, "requirements.txt", "===garbage\n!!!\n\n# comment\nflask==1.0.0\n-e .\n@@@\n")
             names = {d.name for d in sca.parse_requirements(p, "requirements.txt")}
-            self.assertIn("flask", names)  # the one valid line survives, junk ignored
+            self.assertIn("flask", names)  
 
     def test_online_with_no_internet(self):
         with mock.patch.object(sca.urllib.request, "urlopen", side_effect=OSError("no network")):
-            self.assertEqual(sca.query_osv("flask", "PyPI", "1.0.0"), [])  # error swallowed
+            self.assertEqual(sca.query_osv("flask", "PyPI", "1.0.0"), [])  
             with tempfile.TemporaryDirectory() as t:
                 write(t, "requirements.txt", "flask==1.0.0\n")
                 findings = sca.scan_dependencies(Path(t), offline=False)

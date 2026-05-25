@@ -25,7 +25,7 @@ class TestHtmlReport(unittest.TestCase):
             html = out.read_text(encoding="utf-8")
         self.assertIn("<!DOCTYPE html>", html)
         self.assertIn("Possible hardcoded secret", html)
-        self.assertNotIn("__DATA__", html)  # placeholder was substituted
+        self.assertNotIn("__DATA__", html)  
 
     def test_embedded_data_is_valid_json(self):
         with tempfile.TemporaryDirectory() as t:

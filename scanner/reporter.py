@@ -1,4 +1,4 @@
-"""Reporters: console, JSON, Markdown, SARIF, and a self-contained HTML page."""
+#Reporters: console, JSON, Markdown, SARIF, and a self-contained HTML page.
 
 import json
 import re
@@ -45,8 +45,6 @@ def print_findings(findings: List[Finding], verbose: bool = False) -> None:
     sev_w = max(len("SEVERITY"), max(len(f.severity) for f in findings))
     loc_w = max(len("LOCATION"), max(len(f"{f.file}:{f.line}") for f in findings))
 
-    # Numbered table laid out like the example in the brief:
-    #   1  HIGH  src/config.js:12  Possible hardcoded secret
     print(f"{'#':>{num_w}}  {'SEVERITY':<{sev_w}}  {'LOCATION':<{loc_w}}  SHORT EXPLANATION")
     print(f"{'-' * num_w}  {'-' * sev_w}  {'-' * loc_w}  {'-' * len('SHORT EXPLANATION')}")
     for i, f in enumerate(findings, start=1):
@@ -119,11 +117,7 @@ def _oneline(text: str) -> str:
     return " ".join(text.split())
 
 
-# SARIF 2.1.0, for GitHub code scanning and the VS Code SARIF viewer.
-
-# SARIF carries severity in a "level" field; map our labels onto it.
 _SARIF_LEVEL = {"HIGH": "error", "MED": "warning", "LOW": "note"}
-# GitHub also wants a numeric "security-severity" (CVSS-like, 0-10).
 _SECURITY_SEVERITY = {"HIGH": "8.0", "MED": "5.0", "LOW": "2.0"}
 
 

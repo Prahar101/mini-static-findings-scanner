@@ -1,5 +1,3 @@
-"""Shared test helpers."""
-
 import tempfile
 from pathlib import Path
 from typing import Dict, List

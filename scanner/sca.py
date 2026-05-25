@@ -1,4 +1,5 @@
-"""Software Composition Analysis: find known-vulnerable dependencies.
+"""
+Software Composition Analysis: find known-vulnerable dependencies.
 
 Parses the dependency manifests (requirements.txt, package.json,
 package-lock.json) and asks the public OSV.dev API whether each pinned
@@ -33,21 +34,17 @@ ECOSYSTEM_LANGUAGE = {"PyPI": "Python", "npm": "JavaScript"}
 try:  # use packaging for PEP 440 version parsing when it's installed
     from packaging.requirements import Requirement
     HAS_PACKAGING = True
-except Exception:  # pragma: no cover - only hit when packaging is missing
+except Exception:  
     HAS_PACKAGING = False
-
 
 @dataclass
 class Dependency:
-    ecosystem: str  # "PyPI" or "npm"
+    ecosystem: str  
     name: str
     version: Optional[str]
     pinned: bool
     file: str
     line: int
-
-
-# Manifest discovery and parsing.
 
 def find_manifests(root: Path) -> List[Path]:
     names = {"requirements.txt", "package.json", "package-lock.json"}
@@ -125,7 +122,7 @@ def _normalize_npm_version(spec: str):
         return spec, True
     m = re.match(r"[~^>=<\s]*(\d+\.\d+\.\d+)", spec)
     if m:
-        return m.group(1), False  # a range, not an exact pin, so flag it low-confidence
+        return m.group(1), False  
     return None, False
 
 
@@ -215,8 +212,7 @@ def _severity_from_osv(vuln: dict) -> str:
         except (TypeError, ValueError):
             continue
         return HIGH if num >= 7 else MED if num >= 4 else LOW
-    return MED  # no severity given; default a dependency vuln to medium
-
+    return MED  
 
 def _first_fixed(vuln: dict) -> Optional[str]:
     for affected in vuln.get("affected", []):
@@ -264,8 +260,6 @@ def scan_dependencies(root: Path, offline: bool = False, jobs: Optional[int] = N
 
     if offline or not pinned:
         return findings
-
-    # OSV calls are network-bound, so run them across a thread pool.
     workers = jobs if (jobs and jobs > 0) else min(16, (os.cpu_count() or 4) + 4)
     workers = max(1, min(workers, len(pinned)))
     if workers <= 1:

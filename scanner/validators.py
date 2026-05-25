@@ -1,14 +1,3 @@
-"""False-positive validators.
-
-After a rule's regex matches, each validator the rule lists either suppresses the
-match or nudges its confidence. All deterministic, no ML.
-
-A validator takes a MatchContext and returns a ValidationResult (delta, suppress,
-reason). The engine starts at rule.confidence_base, adds the deltas, clamps to
-[0, 1], and drops the finding if a validator suppresses it or it lands below the
-threshold.
-"""
-
 import re
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List
@@ -21,10 +10,10 @@ from scanner.schema import Rule
 class MatchContext:
     line: str
     lines: List[str]
-    line_index: int  # 0-based
+    line_index: int  
     rel_path: str
     rule: Rule
-    match_text: str  # the exact substring the rule matched
+    match_text: str  
 
 
 @dataclass
@@ -34,7 +23,7 @@ class ValidationResult:
     reason: str = ""
 
 
-# Prefixes of real provider tokens; a prefix match is a strong signal.
+# Prefixes of real provider tokens.
 KNOWN_SECRET_PREFIXES = (
     "AKIA", "ASIA",                       # AWS access key id
     "ghp_", "gho_", "ghs_", "ghu_", "ghr_", "github_pat_",  # GitHub tokens
@@ -44,7 +33,7 @@ KNOWN_SECRET_PREFIXES = (
     "SG.",                               # SendGrid
     "glpat-",                            # GitLab PAT
     "shpat_", "shpss_",                  # Shopify
-    "eyJ",                               # JWT (base64 header {"alg"...)
+    "eyJ",                               # JWT 
 )
 
 PRIVATE_KEY_MARKER = "-----BEGIN"
@@ -64,8 +53,8 @@ ENV_REFERENCE_PATTERNS = (
     re.compile(r"os\.getenv", re.IGNORECASE),
     re.compile(r"import\.meta\.env", re.IGNORECASE),
     re.compile(r"\bgetenv\s*\(", re.IGNORECASE),
-    re.compile(r"\$\{[^}]+\}"),          # ${VAR} interpolation
-    re.compile(r"\benv\[[\'\"]"),        # env['KEY']
+    re.compile(r"\$\{[^}]+\}"),          
+    re.compile(r"\benv\[[\'\"]"),        
     re.compile(r"config\.(get|require)\s*\(", re.IGNORECASE),
 )
 
@@ -77,7 +66,7 @@ BENIGN_URL_HOSTS = (
     "xmlns", "purl.org", "ns.adobe.com",
 )
 
-# Inline suppression markers (honored globally by the engine).
+# Inline suppression markers.
 SUPPRESS_MARKERS = ("nosec", "scanner-ignore", "scanner:ignore", "noqa: scanner")
 
 TEST_PATH_HINTS = ("test", "tests", "spec", "specs", "fixture", "fixtures",
@@ -127,8 +116,6 @@ def _looks_sequential_or_repeated(value: str) -> bool:
     low = value.lower()
     return any(low in seq for seq in sequences if len(low) >= 4)
 
-
-# The validators themselves.
 
 def v_secret_prefix(ctx: MatchContext) -> ValidationResult:
     value = extract_value(ctx.line)
@@ -185,8 +172,6 @@ def v_in_comment(ctx: MatchContext) -> ValidationResult:
 
 
 def _inside_triple_quote(lines: List[str], idx: int) -> bool:
-    """Is line `idx` inside a triple-quoted block? Scans earlier lines toggling
-    on each `\"\"\"`/`'''`. A heuristic, but enough to skip docstrings."""
     in_str = False
     delim = None
     for line in lines[:idx]:
@@ -208,9 +193,6 @@ def _inside_triple_quote(lines: List[str], idx: int) -> bool:
 
 
 def v_code_context(ctx: MatchContext) -> ValidationResult:
-    """Drop matches that aren't real code: ones in a comment or inside a
-    triple-quoted string. The "code does X" rules (eval/exec, SQLi, weak crypto)
-    use this so a call merely named in a comment or docstring doesn't fire."""
     if is_comment_line(ctx.line):
         return ValidationResult(suppress=True, reason="match is in a comment, not code")
     if _inside_triple_quote(ctx.lines, ctx.line_index):
@@ -238,9 +220,6 @@ VALIDATORS: Dict[str, Callable[[MatchContext], ValidationResult]] = {
 
 
 def evaluate(ctx: MatchContext) -> ValidationResult:
-    """Run a rule's validators and fold them into one result. The delta is the
-    summed confidence adjustment; suppress is True if any validator vetoed the
-    match; reason joins the individual reasons so the verdict is traceable."""
     total = 0.0
     reasons: List[str] = []
     for name in ctx.rule.validators:

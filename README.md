@@ -14,7 +14,7 @@ This is a mini command-line tool that scans a folder of source files and reports
 
 1.5 **Offline by default**: the only network call is the dependency check, it is opt-in, and it never sends your code.
 
-1.6 **Process-parallel scanning** that kicks in automatically past ~3,000 files (a measured threshold), so large trees scan across all cores while small ones stay sequential and fast.
+1.6 **Process-parallel scanning** that kicks in automatically past about 2,500 files, a threshold set from measurement, so large trees scan across all cores while small ones stay sequential and fast.
 
 ## 2. Quick start
 
@@ -66,7 +66,7 @@ It prints a table and writes `findings.json` and `findings-report.md` next to wh
 
 ## 4. Modes and flags
 
-The default run is offline and writes JSON + Markdown. Everything else is a flag on top of that.
+The default run is offline. If you name no format it writes JSON and Markdown. If you name one or more formats it writes only those.
 
 4.1 `--online`: enable dependency CVE lookups via OSV.dev. Off by default; the only flag that uses the network.
 
@@ -84,13 +84,13 @@ The default run is offline and writes JSON + Markdown. Everything else is a flag
 
 4.8 `--list-rules`: print every rule name and exit.
 
-4.9 `--json PATH`: where to write the JSON report (default `findings.json`).
+4.9 `--json [PATH]` writes a JSON report. It uses PATH if you give one, otherwise `findings.json`.
 
-4.10 `--md PATH`: where to write the Markdown report (default `findings-report.md`).
+4.10 `--md [PATH]` writes a Markdown report. It uses PATH if you give one, otherwise `findings-report.md`.
 
-4.11 `--sarif [PATH]`: also write a SARIF report (default `findings.sarif`).
+4.11 `--sarif [PATH]` writes a SARIF report. It uses PATH if you give one, otherwise `findings.sarif`.
 
-4.12 `--html [PATH]`: also write an interactive HTML report, open it, and print a clickable link (default `findings.html`).
+4.12 `--html [PATH]` writes an HTML report, opens it, and prints a link. It uses PATH if you give one, otherwise `findings.html`.
 
 Examples:
 
@@ -105,21 +105,23 @@ scanner --list-rules
 
 ## 5. Output formats
 
-5.1 **Console**: a numbered table with severity, file:line and the short explanation. Add `-v` for the rule name, CWE, confidence and remediation.
+The scanner writes only the formats you name. With no format flag it writes JSON and Markdown.
 
-5.2 **JSON** (`findings.json`): every field per finding, plus a summary count.
+5.1 **Console**. A numbered table with severity, the file and line, and the short explanation. Add `-v` for the rule name, CWE, confidence, and fix.
 
-5.3 **Markdown** (`findings-report.md`): grouped by severity, each finding shown with its location, CWE, confidence and fix. Named this way so it doesn't collide with `FINDINGS.md` on case-insensitive filesystems.
+5.2 **JSON**. Default file `findings.json`. Every field for each finding plus a summary count.
 
-5.4 **SARIF** (`--sarif`): standard 2.1.0 output that GitHub code scanning and the VS Code SARIF viewer understand.
+5.3 **Markdown**. Default file `findings-report.md`. Grouped by severity, with each finding shown with its location, CWE, confidence, and fix. The name keeps it from clashing with `FINDINGS.md` on case-insensitive filesystems.
 
-5.5 **HTML** (`--html`): a single self-contained page you can filter and search, with remediation shown inline. It opens in your browser, and the file link is printed to the console in case it doesn't. No server, nothing leaves your machine.
+5.4 **SARIF**. Pass `--sarif`. Standard 2.1.0 output that GitHub code scanning and the VS Code SARIF viewer understand.
 
-Generated example reports (from scanning `sample-project/` with `--online`) are checked in under `examples/`, so you can see every format without running anything. The live `findings.*` files the tool writes are gitignored, since on a real codebase a report can quote actual secrets.
+5.5 **HTML**. Pass `--html`. A single self-contained page you can filter and search, with remediation shown inline. It opens in your browser, and the file link is printed to the console in case it does not. No server runs, and nothing leaves your machine.
+
+The `examples/` folder has a checked-in report in every format from scanning `sample-project/` with `--online`, so you can see each one without running anything. The live `findings.*` files the tool writes are gitignored, since on a real codebase a report can quote real secrets.
 
 ## 6. Rules
 
-Fifteen rules cover secrets, dangerous calls, insecure deserialization, weak crypto, SQL injection, path traversal, TLS verification, CORS, debug config, insecure URLs, sensitive files and suspicious comments. Run `scanner --list-rules` for the full list, or see `FINDINGS.md` for the breakdown. The opt-in dependency check (`--online`) adds two more: known-vulnerable package versions and unpinned dependencies.
+Fifteen rules cover secrets, dangerous calls, insecure deserialization, weak crypto, SQL injection, path traversal, TLS verification, CORS, debug config, insecure URLs, sensitive files and suspicious comments. Run `scanner --list-rules` for the full list, or see `FINDINGS.md` for the breakdown. Those fifteen are the offline rules. With `--online`, the dependency check adds its own findings for known-vulnerable package versions and unpinned dependencies, which sit outside the rule list.
 
 ## 7. Config file
 
@@ -137,19 +139,19 @@ Drop a `scanner.config.json` next to where you run the tool (it is picked up aut
 
 ## 8. Performance
 
-All numbers below were measured on this machine (Python 3.11, 8 logical cores) using the committed benchmark script. Regenerate them any time with `python benchmarks/benchmark.py` (it needs matplotlib but the scanner itself does not, and the charts are committed so you don't have to run it).
+All numbers below were measured on this machine, Python 3.11 with 20 logical cores, using the committed benchmark script. You can regenerate them any time with `python benchmarks/benchmark.py`. It needs matplotlib, which the scanner itself does not, and the charts are committed so you do not have to run it.
 
-8.1 Single-core throughput is around 750 files per second on typical source files.
+8.1 Single-core throughput is around 1,900 files per second on the small synthetic files the benchmark uses. Larger real-world files scan slower per file, since the work is done line by line.
 
-8.2 **Parallelism that switches on automatically.** File scanning is CPU-bound regex work, which does not speed up with threads because of Python's GIL, so the scanner uses a process pool instead. Spawning processes costs about a second on Windows, so for small and medium trees a plain sequential pass is actually faster. The scanner handles this automatically: it stays sequential until the tree crosses a size threshold (`PARALLEL_THRESHOLD`, set to 3,000 files in `engine.py`), and only then distributes the work across all cores. Sequential and parallel cross at roughly 2,500 to 3,000 files; past that, parallel stays flat while sequential climbs.
+8.2 **Parallelism that switches on automatically.** File scanning is CPU-bound regex work, which does not speed up with threads because of Python's GIL, so the scanner uses a process pool instead. Spawning processes costs about a second on Windows, so for small and medium trees a plain sequential pass is actually faster. The scanner handles this for you. It stays sequential until the tree crosses a size threshold, the `PARALLEL_THRESHOLD` constant set to 2,500 files in `engine.py`, and only then spreads the work across all cores. Sequential and parallel break even at roughly 2,000 files. The 2,500 cutoff sits a little above that, so the tool only switches when the parallel win is clear rather than marginal. Past that point parallel stays flat while sequential keeps climbing.
 
 ![Scan time: sequential vs parallel](benchmarks/scan_scaling.png)
 
-The same data as a speedup factor makes the rule obvious: below the threshold the process pool is a net loss (which is why the tool does not use it there), and above it the win grows with the tree, reaching roughly 6x at 8,000 files.
+The same data as a speedup factor makes the rule obvious. Below the threshold the process pool is a net loss, which is why the tool does not use it there. Above it the win grows with the tree, reaching about 3.2x at 8,000 files.
 
 ![Parallel speedup by tree size](benchmarks/speedup.png)
 
-8.3 **Cost by mode.** Every mode runs the sample project in a few milliseconds, with one exception: `--online`. The dependency CVE lookups are network round-trips to OSV, which dominate everything else (hundreds of milliseconds to over a second, depending on latency). That is the reason the network is opt-in rather than on by default; `-v` and `--html` add no meaningful overhead.
+8.3 **Cost by mode.** Every mode runs the sample project in a few milliseconds, except for `--online`. The dependency CVE lookups are network round-trips to OSV, which dominate everything else and add several hundred milliseconds, sometimes over a second on a slow link, depending on latency. That is why the network is opt-in rather than on by default. The `-v` and `--html` modes add no meaningful overhead.
 
 ![Runtime by mode](benchmarks/mode_runtime.png)
 
@@ -159,9 +161,23 @@ The same data as a speedup factor makes the rule obvious: below the threshold th
 python -m unittest discover -s tests
 ```
 
-Over 70 tests cover rule detection, false-positive validators, dependency parsing and version logic (with network calls mocked), language detection, all report formats, and the parallel scan path.
+Over 70 tests cover detection, false positive handling, dependency logic, the report formats, and the scanner's own hardening. Each area has its own file.
 
-A separate edge-case suite (`tests/test_edge_cases.py`) exercises failure scenarios including empty folders, binary/large/unicode files, malformed `package.json` and `requirements.txt`, `--online` with no internet, permission-denied files, broken symlinks, and invalid CLI arguments. The scanner degrades gracefully in each case. (Symlink tests are skipped on Windows unless Developer Mode is enabled, since symlink creation requires elevated privileges.)
+| Test file | What it checks |
+|-----------|----------------|
+| `test_rules.py` | Each detection rule fires on a known bad sample. |
+| `test_validators.py` | The false positive validators drop the noise and keep the real hits. |
+| `test_sca.py` | Manifest parsing, OSV severity mapping, and dependency scanning with the network mocked. |
+| `test_config.py` | Turning rules on and off through the config file and the CLI flags. |
+| `test_languages.py` | Language detection from file extensions. |
+| `test_sarif.py` | SARIF output has the right envelope, results, severity levels, and deduped rules. |
+| `test_html.py` | The HTML report is self-contained and its embedded data is valid JSON. |
+| `test_parallel.py` | The parallel and sequential scans return the same findings. |
+| `test_output.py` | The format flags write only what you name, and with no flag it writes JSON and Markdown. |
+| `test_security.py` | The scanner's own hardening, the per-line ReDoS cap and symlink containment. |
+| `test_edge_cases.py` | Empty, binary, oversized, and unicode files, broken manifests, online mode with no internet, permission errors, broken symlinks, and bad CLI arguments. |
+
+The scanner stays stable in every edge case above. The symlink tests are skipped on Windows unless Developer Mode is on, since creating a symlink needs elevated privileges.
 
 ## 10. Beyond the brief
 
@@ -199,7 +215,7 @@ benchmarks/             benchmark script and the charts in this README
 tests/                  unit tests
 setup.sh / setup.ps1    one-command bootstrap
 ```
-
+  
 See `FINDINGS.md` for the writeup on the rules, the false positives and negatives, and how I would prioritize findings in practice.
 
 ## 12. Acknowledgement

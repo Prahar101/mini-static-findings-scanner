@@ -30,7 +30,6 @@ class TestFalsePositiveHandling(unittest.TestCase):
         self.assertGreaterEqual(secret.confidence, 0.9)
 
     def test_min_confidence_filters(self):
-        # Low-entropy quoted value scores low; a high threshold removes it.
         files = {"c.js": 'const token = "abcdefgh";'}
         kept = scan_files(files, min_confidence=0.9)
         self.assertNotIn("Hardcoded Secret", rules_for(kept, "c.js"))

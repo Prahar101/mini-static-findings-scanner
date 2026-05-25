@@ -1,9 +1,5 @@
-"""Detection rules.
+#Each rule owns its severity, any match it produces inherits that severity.
 
-Each rule owns its severity; any match it produces inherits that severity.
-Rules combine a regex with optional context keywords and a list of validators
-(see validators.py) that suppress false positives or adjust confidence.
-"""
 
 from scanner.schema import HIGH, LOW, MED, Rule
 

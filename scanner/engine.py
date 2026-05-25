@@ -1,4 +1,4 @@
-"""Scan orchestration: walk files, apply rules + validators, run SCA, rank."""
+#Scan orchestration: walk files, apply rules + validators, run SCA, rank.
 
 import os
 import re
@@ -13,9 +13,9 @@ from scanner.rules import IGNORE_DIRS, RULES, TEXT_EXTENSIONS
 from scanner.schema import SEVERITY_ORDER, Finding, Rule
 from scanner.validators import MatchContext, evaluate, is_suppressed_inline
 
-MAX_FILE_BYTES = 2_000_000  # skip files larger than 2MB (likely data/minified)
-MAX_LINE_LENGTH = 5_000     # cap line length fed to regexes (ReDoS / backtracking guard)
-PARALLEL_THRESHOLD = 3000   # below this many files, sequential beats process-pool startup
+MAX_FILE_BYTES = 2_000_000  # skip files larger than 2MB 
+MAX_LINE_LENGTH = 5_000     # cap line length fed to regexes 
+PARALLEL_THRESHOLD = 2500   # only parallelize if we have at least this many files, to avoid process overhead on small scans
 
 
 def scan_folder(
@@ -29,7 +29,7 @@ def scan_folder(
     active_rules = [r for r in (rules if rules is not None else RULES) if r.enabled]
     files = list(iter_files(root))
 
-    # Regex work is CPU-bound, so threads don't help (GIL), use processes instead.
+    # Regex work is CPU-bound, so threads don't help, use processes instead.
     # Small trees stay sequential, since spawning processes costs more than it saves.
     workers = resolve_workers(jobs, len(files))
     if workers > 1 and len(files) >= PARALLEL_THRESHOLD:
@@ -46,7 +46,6 @@ def scan_folder(
 
 
 def resolve_workers(jobs: Optional[int], item_count: int) -> int:
-    """Pick a worker count. Explicit --jobs wins; otherwise use the CPU count."""
     if jobs and jobs > 0:
         return jobs
     return os.cpu_count() or 4
@@ -150,9 +149,7 @@ def scan_file_content(file_path: Path, rel_path: str, rules: List[Rule]) -> List
         text = file_path.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return []
-
-    # Cap line length before the regex sees it, so one giant line
-    # can't blow up backtracking.
+    
     lines = [ln[:MAX_LINE_LENGTH] for ln in text.splitlines()]
 
     findings: List[Finding] = []

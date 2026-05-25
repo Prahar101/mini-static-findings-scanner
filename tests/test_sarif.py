@@ -39,7 +39,7 @@ class TestSarif(unittest.TestCase):
         self.assertEqual(len(run["results"]), 2)
         first = run["results"][0]
         self.assertEqual(first["ruleId"], "hardcoded-secret")
-        self.assertEqual(first["level"], "error")  # HIGH -> error
+        self.assertEqual(first["level"], "error")  
         loc = first["locations"][0]["physicalLocation"]
         self.assertEqual(loc["artifactLocation"]["uri"], "src/config.js")
         self.assertEqual(loc["region"]["startLine"], 12)

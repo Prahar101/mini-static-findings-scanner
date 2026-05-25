@@ -1,22 +1,13 @@
-"""Benchmark the scanner and render the charts used in the README.
-
-    python benchmarks/benchmark.py
-
-Needs matplotlib (`pip install matplotlib`). matplotlib is NOT required to run the
-scanner itself -- only to regenerate these charts. The PNGs are committed so a
-reader doesn't have to run anything.
-"""
-
 import shutil
 import sys
 import tempfile
 import time
 from pathlib import Path
 
-# Make `scanner` importable when run as `python benchmarks/benchmark.py`.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from scanner.engine import (
+    PARALLEL_THRESHOLD,
     _scan_parallel,
     _scan_sequential,
     iter_files,
@@ -37,14 +28,11 @@ SAMPLE = "\n".join([
     "cursor.execute('SELECT * FROM t WHERE id=' + uid)",
 ] * 2)
 
-
 def _plt():
-    # Imported lazily so worker processes never pay to import matplotlib.
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     return plt
-
 
 def build(n):
     root = Path(tempfile.mkdtemp())
@@ -65,17 +53,15 @@ def best(fn, runs):
 
 
 def bench_scaling(sizes):
-    # Compare the raw scan phase: forced-sequential vs forced-parallel. This shows
-    # the true crossover and why the tool only auto-parallelises past a threshold.
     rules = [r for r in RULES if r.enabled]
     seq, par = [], []
     for n in sizes:
         root = build(n)
         files = list(iter_files(root))
         workers = resolve_workers(None, n)
-        runs = 2 if n <= 2000 else 1
-        seq.append(best(lambda: _scan_sequential(root, files, rules), runs))
-        par.append(best(lambda: _scan_parallel(root, files, rules, workers), runs))
+        _scan_sequential(root, files, rules)
+        seq.append(best(lambda: _scan_sequential(root, files, rules), 3))
+        par.append(best(lambda: _scan_parallel(root, files, rules, workers), 3))
         shutil.rmtree(root, ignore_errors=True)
         print("n=%-5d seq=%.3fs  par=%.3fs  speedup=%.2fx" % (n, seq[-1], par[-1], seq[-1] / par[-1]))
     return seq, par
@@ -86,8 +72,9 @@ def chart_scaling(sizes, seq, par):
     fig, ax = plt.subplots(figsize=(7, 4.2), dpi=120)
     ax.plot(sizes, seq, "o-", color="#e5484d", label="sequential (1 process)")
     ax.plot(sizes, par, "o-", color="#3b82f6", label="parallel (all cores)")
-    ax.axvline(3000, color="#8b93a0", linestyle="--", linewidth=1)
-    ax.text(3000, ax.get_ylim()[1] * 0.95, " auto-switch (~3000 files)",
+    ax.axvline(PARALLEL_THRESHOLD, color="#8b93a0", linestyle="--", linewidth=1)
+    ax.text(PARALLEL_THRESHOLD, ax.get_ylim()[1] * 0.95,
+            f" auto-switch (~{PARALLEL_THRESHOLD:,} files)",
             color="#8b93a0", va="top", fontsize=9)
     ax.set_xlabel("files scanned")
     ax.set_ylabel("seconds (lower is better)")
@@ -116,8 +103,6 @@ def chart_speedup(sizes, seq, par):
 
 
 def chart_modes():
-    # Runtime of each mode on the sample project (scan + writing the reports).
-    # Only --online touches the network; the rest are within noise of each other.
     import contextlib
     import io
     import tempfile

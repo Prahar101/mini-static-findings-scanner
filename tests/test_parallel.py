@@ -18,7 +18,7 @@ class TestParallelScanning(unittest.TestCase):
         self.assertTrue(scan_files(files, jobs=1))
 
     def test_process_pool_matches_sequential(self):
-        # Exercise the real process pool directly (bypassing the size threshold).
+        # Exercise the real process pool directly.
         content = ("eval(user_input)\nos.system('ls')\n"
                    'api_key = "sk_live_ABCDEF1234567890XYZ"\n')
         rules = [r for r in RULES if r.enabled]
@@ -33,8 +33,8 @@ class TestParallelScanning(unittest.TestCase):
         self.assertEqual(_key(sequential), _key(parallel))
 
     def test_resolve_workers(self):
-        self.assertEqual(resolve_workers(4, 100), 4)            # explicit wins
-        self.assertGreaterEqual(resolve_workers(None, 100), 1)  # auto is sane
+        self.assertEqual(resolve_workers(4, 100), 4)            
+        self.assertGreaterEqual(resolve_workers(None, 100), 1)  
 
 
 if __name__ == "__main__":
